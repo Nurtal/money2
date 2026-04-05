@@ -44,6 +44,7 @@ logger = logging.getLogger(__name__)
 from scrapers.anr import AnrScraper
 from scrapers.anrs import AnrsScraper
 from scrapers.bpi_france import BpiFranceScraper
+from scrapers.fondation_arc import FondationArcScraper
 from scrapers.frm import FrmScraper
 from scrapers.inca import IncaScraper
 from scrapers.inserm import InsermScraper
@@ -52,6 +53,7 @@ SCRAPERS: dict[str, type[BaseScraper]] = {
     "anr": AnrScraper,
     "anrs": AnrsScraper,
     "bpi_france": BpiFranceScraper,
+    "fondation_arc": FondationArcScraper,
     "frm": FrmScraper,
     "inca": IncaScraper,
     "inserm": InsermScraper,
