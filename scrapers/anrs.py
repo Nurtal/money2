@@ -5,8 +5,16 @@ from scrapers.base_scraper import BaseScraper
 from utils.normalizer import normalize_date
 
 BASE = "https://anrs.fr"
-_DATES_RE = re.compile(r"[Dd]u\s+(.+?)\s+au\s+(.+?)$")
-_OPEN_RE = re.compile(r"[Dd]ates?\s+d.ouverture\s*:\s*(.+?)\s*-\s*(.+?)$")
+
+# Real structure (verified 2026-04):
+#   URL     : https://anrs.fr/financements/tous-les-appels-a-projets/
+#   Cards   : div.card-free
+#   Title   : h2 a  (absolute URL, no BASE prefix needed)
+#   Date    : .card-free__footer p  → "Du 16 février 2026 au 25 mars 2026"
+#   Status  : span.tag--primary span  → "Terminé", "En cours"
+#   Pager   : a[href*="/page/{n}/"]
+
+_DATES_RE = re.compile(r"[Dd]u\s+(.+?)\s+au\s+(.+)$")
 
 
 class AnrsScraper(BaseScraper):
@@ -36,43 +44,30 @@ class AnrsScraper(BaseScraper):
         soup = self._soup(html)
         items = []
 
-        # Cards: anchor tags containing a <strong> title that link to the detail page
-        for a_tag in soup.find_all("a", href=re.compile(r"/financements/tous-les-appels-a-projets/.+")):
-            strong = a_tag.find("strong")
-            if not strong:
+        for card in soup.select("div.card-free"):
+            title_tag = card.select_one("h2 a")
+            if not title_tag:
                 continue
 
-            titre = strong.get_text(strip=True)
-            url = a_tag["href"]
+            titre = title_tag.get_text(strip=True)
+            url = title_tag["href"]  # already absolute
 
-            # Walk up to the card container to find dates and status
-            card = a_tag.parent
-            for _ in range(4):  # walk up a few levels
-                if card is None:
-                    break
-                texts = [p.get_text(strip=True) for p in card.find_all("p")]
-                if texts:
-                    break
-                card = card.parent
-
+            # Closing date from footer paragraph "Du … au …"
             date_raw = ""
-            statut = "ouvert"
-            if card:
-                for text in [p.get_text(strip=True) for p in card.find_all("p")]:
-                    m = _DATES_RE.search(text)
-                    if m:
-                        date_raw = m.group(2).strip()
-                        continue
-                    m2 = _OPEN_RE.search(text)
-                    if m2:
-                        date_raw = m2.group(2).strip()
+            footer_p = card.select_one(".card-free__footer p")
+            if footer_p:
+                m = _DATES_RE.search(footer_p.get_text(strip=True))
+                if m:
+                    date_raw = m.group(2).strip()
 
-                for div in card.find_all("div"):
-                    txt = div.get_text(strip=True).lower()
-                    if "terminé" in txt or "clos" in txt or "fermé" in txt:
-                        statut = "fermé"
-                    elif "en cours" in txt or "ouvert" in txt:
-                        statut = "ouvert"
+            # Status from tag badge
+            statut = "ouvert"
+            for tag_span in card.select("span.tag span"):
+                txt = tag_span.get_text(strip=True).lower()
+                if txt in ("terminé", "clos", "fermé"):
+                    statut = "fermé"
+                elif txt in ("en cours", "ouvert"):
+                    statut = "ouvert"
 
             items.append({
                 "titre": titre,

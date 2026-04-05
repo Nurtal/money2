@@ -5,7 +5,25 @@ from scrapers.base_scraper import BaseScraper
 from utils.normalizer import normalize_date
 
 BASE = "https://www.cancer.fr"
-_DATE_RE = re.compile(r"Date limite[^:]*:\s*(.+?)(?:\s*à\s*\d+[h:]\d+)?$", re.IGNORECASE)
+
+# Real structure (verified 2026-04):
+#   URL     : https://www.cancer.fr/professionnels-de-la-recherche/appels-a-projets-et-a-candidatures/nos-appels-a-projets
+#   Cards   : li.list-articles-item
+#   Title   : h2 a  (relative URL → prepend BASE)
+#   Date    : <time datetime="YYYY-MM-DDCEST…">  → first 10 chars = ISO date
+#   Status  : first <p> in .card-start  ("En cours", "Clos", "Résultats")
+#   Desc    : <p> in .card-end
+#   Pager   : a[href*="?page=N"]  (1-indexed, page 1 has no param)
+
+_STATUS_MAP = {
+    "en cours": "ouvert",
+    "ouvert": "ouvert",
+    "clos": "fermé",
+    "clôturé": "fermé",
+    "fermé": "fermé",
+    "résultats": "fermé",
+    "résultat": "fermé",
+}
 
 
 class IncaScraper(BaseScraper):
@@ -36,28 +54,33 @@ class IncaScraper(BaseScraper):
         soup = self._soup(html)
         items = []
 
-        for li in soup.select("li"):
-            title_tag = li.select_one("h3 a")
+        for li in soup.select("li.list-articles-item"):
+            title_tag = li.select_one("h2 a") or li.select_one("h3 a")
             if not title_tag:
                 continue
 
-            # Date and status are in <p> tags
+            # ISO date from <time datetime="YYYY-MM-DDCEST…">
             date_raw = ""
+            time_tag = li.select_one("time[datetime]")
+            if time_tag:
+                date_raw = time_tag["datetime"][:10]  # "YYYY-MM-DD"
+
+            # Status: first <p> inside .card-start
             statut = "ouvert"
+            card_start = li.select_one(".card-start")
+            if card_start:
+                first_p = card_start.select_one("p")
+                if first_p:
+                    txt = first_p.get_text(strip=True).lower()
+                    statut = _STATUS_MAP.get(txt, "ouvert")
+
+            # Description: <p> inside .card-end
             description = ""
-            for p in li.select("p"):
-                text = p.get_text(strip=True)
-                m = _DATE_RE.search(text)
-                if m:
-                    date_raw = m.group(1).strip()
-                elif text.lower() in ("en cours", "ouvert"):
-                    statut = "ouvert"
-                elif text.lower() in ("clos", "fermé", "clôturé"):
-                    statut = "fermé"
-                elif text.lower().startswith("résultat"):
-                    statut = "fermé"
-                else:
-                    description = text
+            card_end = li.select_one(".card-end")
+            if card_end:
+                desc_p = card_end.select_one("p")
+                if desc_p:
+                    description = desc_p.get_text(strip=True)
 
             items.append({
                 "titre": title_tag.get_text(strip=True),

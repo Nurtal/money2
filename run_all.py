@@ -41,13 +41,18 @@ logger = logging.getLogger(__name__)
 
 
 # ── Scraper registry ─────────────────────────────────────────────────────────
-# Import and register scrapers here as they are implemented:
-# from scrapers.bpi_france import BpiFranceScraper
-# from scrapers.anr import AnrScraper
+from scrapers.anr import AnrScraper
+from scrapers.anrs import AnrsScraper
+from scrapers.inca import IncaScraper
 
 SCRAPERS: dict[str, type[BaseScraper]] = {
+    "anr": AnrScraper,
+    "anrs": AnrsScraper,
+    "inca": IncaScraper,
+    # Future scrapers:
     # "bpi_france": BpiFranceScraper,
-    # "anr": AnrScraper,
+    # "inserm": InsermScraper,
+    # "frm": FrmScraper,
 }
 
 
