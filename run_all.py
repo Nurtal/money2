@@ -43,6 +43,7 @@ logger = logging.getLogger(__name__)
 # ── Scraper registry ─────────────────────────────────────────────────────────
 from scrapers.anr import AnrScraper
 from scrapers.anrs import AnrsScraper
+from scrapers.ars import ArsScraper
 from scrapers.bpi_france import BpiFranceScraper
 from scrapers.fondation_alzheimer import FondationAlzheimerScraper
 from scrapers.fondation_arc import FondationArcScraper
@@ -54,6 +55,7 @@ from scrapers.inserm import InsermScraper
 SCRAPERS: dict[str, type[BaseScraper]] = {
     "anr": AnrScraper,
     "anrs": AnrsScraper,
+    "ars": ArsScraper,
     "bpi_france": BpiFranceScraper,
     "fondation_alzheimer": FondationAlzheimerScraper,
     "fondation_arc": FondationArcScraper,
