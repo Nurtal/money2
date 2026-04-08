@@ -45,10 +45,13 @@ from scrapers.anr import AnrScraper
 from scrapers.anrs import AnrsScraper
 from scrapers.ars import ArsScraper
 from scrapers.bpi_france import BpiFranceScraper
+from scrapers.erc import ErcScraper
 from scrapers.fondation_alzheimer import FondationAlzheimerScraper
 from scrapers.fondation_arc import FondationArcScraper
 from scrapers.fondation_de_france import FondationDeFranceScraper
 from scrapers.frm import FrmScraper
+from scrapers.horizon_europe import HorizonEuropeScraper
+from scrapers.ihi import IhiScraper
 from scrapers.inca import IncaScraper
 from scrapers.inserm import InsermScraper
 
@@ -57,10 +60,13 @@ SCRAPERS: dict[str, type[BaseScraper]] = {
     "anrs": AnrsScraper,
     "ars": ArsScraper,
     "bpi_france": BpiFranceScraper,
+    "erc": ErcScraper,
     "fondation_alzheimer": FondationAlzheimerScraper,
     "fondation_arc": FondationArcScraper,
     "fondation_de_france": FondationDeFranceScraper,
     "frm": FrmScraper,
+    "horizon_europe": HorizonEuropeScraper,
+    "ihi": IhiScraper,
     "inca": IncaScraper,
     "inserm": InsermScraper,
 }
